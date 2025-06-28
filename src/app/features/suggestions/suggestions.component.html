@@ -1,0 +1,108 @@
+<div class="suggestions-container">
+  <div class="header">
+    <h1>Team Suggestions</h1>
+    <p>Share your ideas to improve our workplace and processes</p>
+    <button *ngIf="!isLoading" (click)="refreshSuggestions()" class="refresh-btn">
+      🔄 Refresh
+    </button>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+    <button (click)="refreshSuggestions()" class="retry-btn">Try Again</button>
+  </div>
+
+  <div class="content-grid">
+    <!-- Submit New Suggestion -->
+    <div class="submit-section">
+      <h2>Submit a New Suggestion</h2>
+      <form (ngSubmit)="submitSuggestion()" class="suggestion-form">
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input 
+            type="text" 
+            id="title" 
+            [(ngModel)]="newSuggestion.title" 
+            name="title"
+            placeholder="Brief title for your suggestion"
+            [disabled]="isSubmitting"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="category">Category</label>
+          <select id="category" [(ngModel)]="newSuggestion.category" name="category" [disabled]="isSubmitting">
+            <option *ngFor="let category of categories" [value]="category">
+              {{ category }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea 
+            id="description" 
+            [(ngModel)]="newSuggestion.description" 
+            name="description"
+            placeholder="Describe your suggestion in detail..."
+            rows="4"
+            [disabled]="isSubmitting"
+            required></textarea>
+        </div>
+
+        <button type="submit" class="submit-btn" [disabled]="isSubmitting">
+          {{ isSubmitting ? 'Submitting...' : 'Submit Suggestion' }}
+        </button>
+      </form>
+    </div>
+
+    <!-- Filter and List -->
+    <div class="suggestions-section">
+      <div class="filter-section">
+        <h2>All Suggestions</h2>
+        <div class="filter-controls">
+          <label for="categoryFilter">Filter by category:</label>
+          <select id="categoryFilter" [(ngModel)]="selectedCategory" name="categoryFilter" (change)="filterByCategory()">
+            <option value="all">All Categories</option>
+            <option *ngFor="let category of categories" [value]="category">
+              {{ category }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div *ngIf="isLoading" class="loading">
+        <p>Loading suggestions...</p>
+      </div>
+
+      <div *ngIf="!isLoading" class="suggestions-list">
+        <div *ngFor="let suggestion of filteredSuggestions" class="suggestion-card">
+          <div class="suggestion-header">
+            <h3>{{ suggestion.title }}</h3>
+            <span class="status-badge" [style.background-color]="getStatusColor(suggestion.status)">
+              {{ suggestion.status | titlecase }}
+            </span>
+          </div>
+          
+          <div class="suggestion-meta">
+            <span class="category">{{ suggestion.category }}</span>
+            <span class="submitted-by">by {{ suggestion.submittedBy }}</span>
+            <span class="submitted-date">{{ suggestion.submittedAt | date:'MMM d, y' }}</span>
+          </div>
+          
+          <p class="suggestion-description">{{ suggestion.description }}</p>
+          
+          <div class="suggestion-actions">
+            <button (click)="voteSuggestion(suggestion)" class="vote-btn">
+              👍 {{ suggestion.votes }}
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="filteredSuggestions.length === 0" class="no-suggestions">
+          <p>No suggestions found for the selected category.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,16 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface Job {
-  id: number;
-  title: string;
-  department: string;
-  location: string;
-  type: string;
-  posted: string;
-  description: string;
-}
+import { ApiService, Job } from '../../services/api.service';
 
 @Component({
   selector: 'app-jobs',
@@ -19,45 +10,149 @@ interface Job {
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.css'
 })
-export class JobsComponent {
+export class JobsComponent implements OnInit {
+  jobs: Job[] = [];
+  filteredJobs: Job[] = [];
+  isLoading = true;
+  error: string | null = null;
+  isSubmitting = false;
+  showAddJobForm = false;
+
+  // Filter properties
   searchTerm = '';
-  
-  jobs: Job[] = [
-    {
-      id: 1,
-      title: 'Senior Frontend Developer',
+  selectedDepartment = 'all';
+  selectedLocation = 'all';
+  selectedType = 'all';
+
+  // Filter options
+  departments: string[] = [];
+  locations: string[] = [];
+  types: string[] = [];
+
+  // New job form
+  newJob = {
+    title: '',
+    department: 'Engineering',
+    location: 'Remote',
+    type: 'Full-time',
+    description: '',
+    requirements: ''
+  };
+
+  constructor(private apiService: ApiService) {}
+
+  ngOnInit() {
+    this.loadJobs();
+  }
+
+  loadJobs() {
+    this.isLoading = true;
+    this.error = null;
+
+    this.apiService.getJobs().subscribe({
+      next: (jobs) => {
+        this.jobs = jobs;
+        this.filteredJobs = jobs;
+        this.populateFilterOptions();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        this.error = 'Failed to load jobs data';
+        this.isLoading = false;
+        console.error('Jobs error:', error);
+      }
+    });
+  }
+
+  populateFilterOptions() {
+    this.departments = [...new Set(this.jobs.map(job => job.department))];
+    this.locations = [...new Set(this.jobs.map(job => job.location))];
+    this.types = [...new Set(this.jobs.map(job => job.type))];
+  }
+
+  applyFilters() {
+    const filters = {
+      search: this.searchTerm,
+      department: this.selectedDepartment,
+      location: this.selectedLocation,
+      type: this.selectedType
+    };
+
+    this.isLoading = true;
+    this.apiService.getJobs(filters).subscribe({
+      next: (jobs) => {
+        this.filteredJobs = jobs;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        this.error = 'Failed to filter jobs';
+        this.isLoading = false;
+        console.error('Filter error:', error);
+      }
+    });
+  }
+
+  clearFilters() {
+    this.searchTerm = '';
+    this.selectedDepartment = 'all';
+    this.selectedLocation = 'all';
+    this.selectedType = 'all';
+    this.loadJobs();
+  }
+
+  refreshJobs() {
+    this.loadJobs();
+  }
+
+  toggleAddJobForm() {
+    this.showAddJobForm = !this.showAddJobForm;
+    if (!this.showAddJobForm) {
+      this.resetJobForm();
+    }
+  }
+
+  submitJob() {
+    if (this.newJob.title.trim() && this.newJob.description.trim()) {
+      this.isSubmitting = true;
+      
+      const jobData: Partial<Job> = {
+        title: this.newJob.title,
+        department: this.newJob.department,
+        location: this.newJob.location,
+        type: this.newJob.type,
+        description: this.newJob.description,
+        requirements: this.newJob.requirements.split('\n').filter(req => req.trim())
+      };
+
+      this.apiService.createJob(jobData).subscribe({
+        next: (newJob) => {
+          this.jobs.unshift(newJob);
+          this.applyFilters(); // Refresh the filtered list
+          this.resetJobForm();
+          this.showAddJobForm = false;
+          this.isSubmitting = false;
+        },
+        error: (error) => {
+          this.error = 'Failed to create job listing';
+          this.isSubmitting = false;
+          console.error('Submit job error:', error);
+        }
+      });
+    }
+  }
+
+  resetJobForm() {
+    this.newJob = {
+      title: '',
       department: 'Engineering',
       location: 'Remote',
       type: 'Full-time',
-      posted: '2 days ago',
-      description: 'We are looking for a passionate Senior Frontend Developer to join our team and help build amazing user experiences.'
-    },
-    {
-      id: 2,
-      title: 'UX Designer',
-      department: 'Design',
-      location: 'New York, NY',
-      type: 'Full-time',
-      posted: '1 week ago',
-      description: 'Join our design team to create intuitive and beautiful user interfaces for our applications.'
-    },
-    {
-      id: 3,
-      title: 'Marketing Specialist',
-      department: 'Marketing',
-      location: 'San Francisco, CA',
-      type: 'Contract',
-      posted: '3 days ago',
-      description: 'Help us grow our brand and reach new customers through innovative marketing strategies.'
-    },
-    {
-      id: 4,
-      title: 'Backend Developer',
-      department: 'Engineering',
-      location: 'Austin, TX',
-      type: 'Full-time',
-      posted: '5 days ago',
-      description: 'Build scalable and robust backend systems to support our growing platform.'
-    }
-  ];
+      description: '',
+      requirements: ''
+    };
+  }
+
+  isAdmin(): boolean {
+    return this.apiService.isAdmin();
+  }
 }

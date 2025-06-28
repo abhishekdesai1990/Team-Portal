@@ -1,0 +1,57 @@
+    <div class="login-container">
+      <div class="login-card">
+        <h1>TeamPortal Login</h1>
+        <p class="login-subtitle">Sign in to access your account</p>
+
+        <form (ngSubmit)="onSubmit()" class="login-form">
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input 
+              type="text" 
+              id="username" 
+              [(ngModel)]="username" 
+              name="username"
+              placeholder="Enter your username"
+              class="form-input"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input 
+              type="password" 
+              id="password" 
+              [(ngModel)]="password" 
+              name="password"
+              placeholder="Enter your password"
+              class="form-input"
+              required
+            >
+          </div>
+
+          <div *ngIf="errorMessage" class="error-message">
+            {{ errorMessage }}
+          </div>
+
+          <button 
+            type="submit" 
+            class="login-btn" 
+            [disabled]="isLoading"
+          >
+            <span *ngIf="isLoading">Logging in...</span>
+            <span *ngIf="!isLoading">Login</span>
+          </button>
+        </form>
+
+        <div class="demo-credentials">
+          <h3>Demo Credentials</h3>
+          <div class="credentials-list">
+            <div *ngFor="let cred of getDummyCredentials()" class="credential-item">
+              <strong>{{ cred.role }}:</strong>
+              <span>{{ cred.username }} / {{ cred.password }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>

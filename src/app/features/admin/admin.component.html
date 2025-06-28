@@ -1,0 +1,281 @@
+<div class="admin-container">
+  <div class="admin-header">
+    <h1>Admin Dashboard</h1>
+    <p>Welcome back, {{ currentUser?.username }}!</p>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+    <button (click)="refreshData()" class="retry-btn">Try Again</button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">
+    <p>Loading admin data...</p>
+  </div>
+
+  <div *ngIf="!isLoading" class="admin-tabs">
+    <button 
+      *ngFor="let tab of tabs; trackBy: trackByTab" 
+      class="tab-btn"
+      [class.active]="selectedTab === tab"
+      (click)="selectTab(tab)"
+      type="button"
+      [attr.data-tab]="tab"
+    >
+      {{ tab | titlecase }}
+    </button>
+  </div>
+
+  <div *ngIf="!isLoading" class="admin-content">
+    <!-- Dashboard Tab -->
+    <div *ngIf="selectedTab === 'dashboard'" class="tab-content">
+      <div class="stats-grid" *ngIf="stats">
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.totalJobs }}</div>
+          <div class="stat-label">Total Jobs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.totalSuggestions }}</div>
+          <div class="stat-label">Total Suggestions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ users.length }}</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.recentJobsCount }}</div>
+          <div class="stat-label">Recent Jobs</div>
+        </div>
+      </div>
+
+      <div class="recent-activity">
+        <h3>Recent System Activity</h3>
+        <div class="activity-list">
+          <div class="activity-item" *ngFor="let job of jobs.slice(0, 5)">
+            <span class="activity-time">{{ job.postedDate | date:'short' }}</span>
+            <span class="activity-text">Job posted: {{ job.title }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Jobs Tab -->
+    <div *ngIf="selectedTab === 'jobs'" class="tab-content">
+      <div class="jobs-header">
+        <h3>Job Management</h3>
+        <button class="btn btn-primary" (click)="toggleAddJobForm()">
+          {{ showAddJobForm ? '✕ Cancel' : '+ Add New Job' }}
+        </button>
+      </div>
+
+      <!-- Add Job Form -->
+      <div *ngIf="showAddJobForm" class="add-job-form">
+        <h4>Create New Job Listing</h4>
+        <form (ngSubmit)="submitJob()" class="job-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="jobTitle">Job Title *</label>
+              <input 
+                type="text" 
+                id="jobTitle"
+                [(ngModel)]="newJob.title" 
+                name="jobTitle"
+                placeholder="e.g. Senior Frontend Developer"
+                [disabled]="isSubmitting"
+                required>
+            </div>
+            
+            <div class="form-group">
+              <label for="jobType">Job Type</label>
+              <select id="jobType" [(ngModel)]="newJob.type" name="jobType" [disabled]="isSubmitting">
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Contract">Contract</option>
+                <option value="Internship">Internship</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="jobDepartment">Department</label>
+              <select id="jobDepartment" [(ngModel)]="newJob.department" name="jobDepartment" [disabled]="isSubmitting">
+                <option value="Engineering">Engineering</option>
+                <option value="Design">Design</option>
+                <option value="Marketing">Marketing</option>
+                <option value="Sales">Sales</option>
+                <option value="Product">Product</option>
+                <option value="HR">HR</option>
+                <option value="Finance">Finance</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="jobLocation">Location</label>
+              <select id="jobLocation" [(ngModel)]="newJob.location" name="jobLocation" [disabled]="isSubmitting">
+                <option value="Remote">Remote</option>
+                <option value="New York">New York</option>
+                <option value="San Francisco">San Francisco</option>
+                <option value="Austin">Austin</option>
+                <option value="London">London</option>
+                <option value="Berlin">Berlin</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="jobDescription">Job Description *</label>
+            <textarea 
+              id="jobDescription"
+              [(ngModel)]="newJob.description" 
+              name="jobDescription"
+              placeholder="Describe the role, responsibilities, and what you're looking for..."
+              rows="4"
+              [disabled]="isSubmitting"
+              required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="jobRequirements">Requirements (one per line)</label>
+            <textarea 
+              id="jobRequirements"
+              [(ngModel)]="newJob.requirements" 
+              name="jobRequirements"
+              placeholder="5+ years of experience&#10;Bachelor's degree in Computer Science&#10;Proficiency in Angular and TypeScript"
+              rows="4"
+              [disabled]="isSubmitting"></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="submit-btn" [disabled]="isSubmitting || !newJob.title.trim() || !newJob.description.trim()">
+              {{ isSubmitting ? 'Creating...' : 'Create Job Listing' }}
+            </button>
+            <button type="button" (click)="toggleAddJobForm()" class="cancel-btn" [disabled]="isSubmitting">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Jobs List -->
+      <div class="jobs-list">
+        <div class="jobs-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Department</th>
+                <th>Location</th>
+                <th>Type</th>
+                <th>Posted</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let job of jobs">
+                <td>{{ job.title }}</td>
+                <td>{{ job.department }}</td>
+                <td>{{ job.location }}</td>
+                <td>{{ job.type }}</td>
+                <td>{{ job.postedDate | date:'MMM d, y' }}</td>
+                <td class="actions">
+                  <button class="btn btn-sm btn-danger" (click)="deleteJob(job.id!)">
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div *ngIf="jobs.length === 0" class="no-data">
+            <p>No jobs available.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+        <!-- Users Tab -->
+        <div *ngIf="selectedTab === 'users'" class="tab-content">
+          <div class="users-header">
+            <h3>User Management</h3>
+            <button class="btn btn-primary">Add New User</button>
+          </div>
+
+          <div class="users-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let user of users">
+                  <td>{{ user.username }}</td>
+                  <td>{{ user.email || 'N/A' }}</td>
+                  <td>{{ user.role }}</td>
+                  <td>
+                    <span class="status-badge" [ngClass]="(user.status || 'Active').toLowerCase()">
+                      {{ user.status || 'Active' }}
+                    </span>
+                  </td>
+                  <td class="actions">
+                    <button class="btn btn-sm btn-secondary" (click)="toggleUserStatus(user)">
+                      {{ (user.status || 'Active') === 'Active' ? 'Deactivate' : 'Activate' }}
+                    </button>
+                    <button class="btn btn-sm btn-danger" (click)="deleteUser(user.id!)">
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <div *ngIf="users.length === 0" class="no-data">
+              <p>No users available.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div *ngIf="selectedTab === 'settings'" class="tab-content">
+          <div class="settings-section">
+            <h3>System Settings</h3>
+            
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" checked> Enable user registrations
+              </label>
+              <p class="setting-description">Allow new users to register for accounts</p>
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox" checked> Email notifications
+              </label>
+              <p class="setting-description">Send system notifications via email</p>
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label">
+                <input type="checkbox"> Maintenance mode
+              </label>
+              <p class="setting-description">Put the system in maintenance mode</p>
+            </div>
+
+            <div class="setting-group">
+              <label for="session-timeout">Session timeout (minutes)</label>
+              <input type="number" id="session-timeout" value="30" min="5" max="120" class="form-input">
+              <p class="setting-description">Automatically log out inactive users</p>
+            </div>
+
+            <div class="settings-actions">
+              <button class="btn btn-primary">Save Settings</button>
+              <button class="btn btn-secondary">Reset to Defaults</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>

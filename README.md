@@ -1,16 +1,57 @@
 # TeamPortal
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.0.4.
+Angular application with Express.js API backend for team management and collaboration.
 
-## Development server
+## Features
 
-To start a local development server, run:
+- **Dashboard** - Team metrics and activity feed
+- **Job Listings** - Browse and search job postings with filters
+- **Suggestions** - Submit and vote on team improvement suggestions
+- **Admin Panel** - User management and system statistics (admin only)
+- **Authentication** - Role-based login system with route protection
 
+## Architecture
+
+- **Frontend**: Angular 18+ with TypeScript, standalone components
+- **Backend**: Express.js API with file system storage
+- **Authentication**: JWT-like session management with localStorage
+- **Data**: JSON files for persistence (no database required)
+
+## Quick Start
+
+### Option 1: Use the Start Script (Recommended)
+
+**Windows:**
 ```bash
-ng serve
+start-dev.bat
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+**Linux/Mac:**
+```bash
+chmod +x start-dev.sh
+./start-dev.sh
+```
+
+### Option 2: Manual Setup
+
+1. **Start the API server:**
+```bash
+cd api
+npm install
+npm start
+```
+
+2. **Start the Angular app (in a new terminal):**
+```bash
+ng serve --open
+```
+
+The API runs on `http://localhost:3000` and the Angular app on `http://localhost:4200`.
+
+## Default Login Credentials
+
+- **Admin**: `admin / admin123`
+- **User**: `user / user123`
 
 ## Code scaffolding
 

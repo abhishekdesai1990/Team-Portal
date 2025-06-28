@@ -1,37 +1,168 @@
-    <div class="jobs-container">
-      <h1>Job Listings</h1>
-      
-      <div class="filters">
-        <input 
-          type="text" 
-          placeholder="Search jobs..." 
-          class="search-input"
-          [(ngModel)]="searchTerm"
-        >
-        <select class="filter-select">
-          <option value="">All Departments</option>
-          <option value="engineering">Engineering</option>
-          <option value="design">Design</option>
-          <option value="marketing">Marketing</option>
-        </select>
-      </div>
+<div class="jobs-container">
+  <div class="header">
+    <h1>Job Listings</h1>
+    <div class="header-actions">
+      <button *ngIf="isAdmin() && !isLoading" (click)="toggleAddJobForm()" class="add-job-btn">
+        {{ showAddJobForm ? '✕ Cancel' : '+ Add Job' }}
+      </button>
+      <button *ngIf="!isLoading" (click)="refreshJobs()" class="refresh-btn">
+        🔄 Refresh
+      </button>
+    </div>
+  </div>
 
-      <div class="jobs-grid">
-        <div *ngFor="let job of jobs" class="job-card">
-          <div class="job-header">
-            <h3>{{ job.title }}</h3>
-            <span class="job-type">{{ job.type }}</span>
-          </div>
-          <div class="job-details">
-            <p><strong>Department:</strong> {{ job.department }}</p>
-            <p><strong>Location:</strong> {{ job.location }}</p>
-            <p><strong>Posted:</strong> {{ job.posted }}</p>
-          </div>
-          <p class="job-description">{{ job.description }}</p>
-          <div class="job-actions">
-            <button class="btn btn-primary">Apply Now</button>
-            <button class="btn btn-secondary">View Details</button>
-          </div>
+  <div *ngIf="error" class="error-message">
+    <p>{{ error }}</p>
+    <button (click)="refreshJobs()" class="retry-btn">Try Again</button>
+  </div>
+
+  <!-- Add Job Form -->
+  <div *ngIf="showAddJobForm && isAdmin()" class="add-job-form">
+    <h2>Create New Job Listing</h2>
+    <form (ngSubmit)="submitJob()" class="job-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="jobTitle">Job Title *</label>
+          <input 
+            type="text" 
+            id="jobTitle"
+            [(ngModel)]="newJob.title" 
+            name="jobTitle"
+            placeholder="e.g. Senior Frontend Developer"
+            [disabled]="isSubmitting"
+            required>
+        </div>
+        
+        <div class="form-group">
+          <label for="jobType">Job Type</label>
+          <select id="jobType" [(ngModel)]="newJob.type" name="jobType" [disabled]="isSubmitting">
+            <option value="Full-time">Full-time</option>
+            <option value="Part-time">Part-time</option>
+            <option value="Contract">Contract</option>
+            <option value="Internship">Internship</option>
+          </select>
         </div>
       </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="jobDepartment">Department</label>
+          <select id="jobDepartment" [(ngModel)]="newJob.department" name="jobDepartment" [disabled]="isSubmitting">
+            <option value="Engineering">Engineering</option>
+            <option value="Design">Design</option>
+            <option value="Marketing">Marketing</option>
+            <option value="Sales">Sales</option>
+            <option value="Product">Product</option>
+            <option value="HR">HR</option>
+            <option value="Finance">Finance</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="jobLocation">Location</label>
+          <select id="jobLocation" [(ngModel)]="newJob.location" name="jobLocation" [disabled]="isSubmitting">
+            <option value="Remote">Remote</option>
+            <option value="New York">New York</option>
+            <option value="San Francisco">San Francisco</option>
+            <option value="Austin">Austin</option>
+            <option value="London">London</option>
+            <option value="Berlin">Berlin</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="jobDescription">Job Description *</label>
+        <textarea 
+          id="jobDescription"
+          [(ngModel)]="newJob.description" 
+          name="jobDescription"
+          placeholder="Describe the role, responsibilities, and what you're looking for..."
+          rows="4"
+          [disabled]="isSubmitting"
+          required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="jobRequirements">Requirements (one per line)</label>
+        <textarea 
+          id="jobRequirements"
+          [(ngModel)]="newJob.requirements" 
+          name="jobRequirements"
+          placeholder="5+ years of experience&#10;Bachelor's degree in Computer Science&#10;Proficiency in Angular and TypeScript"
+          rows="4"
+          [disabled]="isSubmitting"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="submit-btn" [disabled]="isSubmitting || !newJob.title.trim() || !newJob.description.trim()">
+          {{ isSubmitting ? 'Creating...' : 'Create Job Listing' }}
+        </button>
+        <button type="button" (click)="toggleAddJobForm()" class="cancel-btn" [disabled]="isSubmitting">
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+  
+  <div class="filters">
+    <input 
+      type="text" 
+      placeholder="Search jobs..." 
+      class="search-input"
+      [(ngModel)]="searchTerm"
+      (input)="applyFilters()"
+      [disabled]="isLoading"
+    >
+    
+    <select class="filter-select" [(ngModel)]="selectedDepartment" (change)="applyFilters()" [disabled]="isLoading">
+      <option value="all">All Departments</option>
+      <option *ngFor="let dept of departments" [value]="dept">{{ dept }}</option>
+    </select>
+    
+    <select class="filter-select" [(ngModel)]="selectedLocation" (change)="applyFilters()" [disabled]="isLoading">
+      <option value="all">All Locations</option>
+      <option *ngFor="let loc of locations" [value]="loc">{{ loc }}</option>
+    </select>
+    
+    <select class="filter-select" [(ngModel)]="selectedType" (change)="applyFilters()" [disabled]="isLoading">
+      <option value="all">All Types</option>
+      <option *ngFor="let type of types" [value]="type">{{ type }}</option>
+    </select>
+    
+    <button (click)="clearFilters()" class="clear-btn" [disabled]="isLoading">Clear Filters</button>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">
+    <p>Loading jobs...</p>
+  </div>
+
+  <div *ngIf="!isLoading" class="jobs-grid">
+    <div *ngFor="let job of filteredJobs" class="job-card">
+      <div class="job-header">
+        <h3>{{ job.title }}</h3>
+        <span class="job-type">{{ job.type }}</span>
+      </div>
+      <div class="job-details">
+        <p><strong>Department:</strong> {{ job.department }}</p>
+        <p><strong>Location:</strong> {{ job.location }}</p>
+        <p><strong>Posted:</strong> {{ job.postedDate | date:'MMM d, y' }}</p>
+      </div>
+      <p class="job-description">{{ job.description }}</p>
+      <div class="job-requirements" *ngIf="job.requirements && job.requirements.length > 0">
+        <strong>Requirements:</strong>
+        <ul>
+          <li *ngFor="let req of job.requirements">{{ req }}</li>
+        </ul>
+      </div>
+      <div class="job-actions">
+        <button class="btn btn-primary">Apply Now</button>
+        <button class="btn btn-secondary">View Details</button>
+      </div>
     </div>
+
+    <div *ngIf="filteredJobs.length === 0" class="no-jobs">
+      <p>No jobs found matching your criteria.</p>
+    </div>
+  </div>
+</div>
