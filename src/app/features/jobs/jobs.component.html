@@ -1,0 +1,37 @@
+    <div class="jobs-container">
+      <h1>Job Listings</h1>
+      
+      <div class="filters">
+        <input 
+          type="text" 
+          placeholder="Search jobs..." 
+          class="search-input"
+          [(ngModel)]="searchTerm"
+        >
+        <select class="filter-select">
+          <option value="">All Departments</option>
+          <option value="engineering">Engineering</option>
+          <option value="design">Design</option>
+          <option value="marketing">Marketing</option>
+        </select>
+      </div>
+
+      <div class="jobs-grid">
+        <div *ngFor="let job of jobs" class="job-card">
+          <div class="job-header">
+            <h3>{{ job.title }}</h3>
+            <span class="job-type">{{ job.type }}</span>
+          </div>
+          <div class="job-details">
+            <p><strong>Department:</strong> {{ job.department }}</p>
+            <p><strong>Location:</strong> {{ job.location }}</p>
+            <p><strong>Posted:</strong> {{ job.posted }}</p>
+          </div>
+          <p class="job-description">{{ job.description }}</p>
+          <div class="job-actions">
+            <button class="btn btn-primary">Apply Now</button>
+            <button class="btn btn-secondary">View Details</button>
+          </div>
+        </div>
+      </div>
+    </div>
