@@ -1,0 +1,26 @@
+include: 
+- project: nhsbsa/citizen-services/blc/lambda/lambda-ci-pipeline
+  file:
+    - deploy-nodejs-lambda.yml
+
+# Variables used for deploy environments
+variables:
+  DEPLOY_ENVIRONMENT: 
+    value: "dev" 
+    options:
+      - "dev"  
+      - "test" 
+      - "stage" 
+      - "prod" 
+    description: "The deployment target. Set to 'dev' by default."
+  S3_BUCKET: "blc-${DEPLOY_ENVIRONMENT}-incomplete-application-status-lambda-bucket"
+  STAGE_S3_BUCKET: "blc-stage-incomplete-application-status-lambda-bucket"
+  LAMBDA_NAME: "blc-incomplete-application-status-lambda"
+  PACKAGE_NAME: "lambda_incomplete_application_status_package"
+
+stages:
+  - build
+  - test
+  - semantic_version
+  - package
+  - deploy  

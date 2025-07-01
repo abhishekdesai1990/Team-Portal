@@ -1,0 +1,6 @@
+{
+  "Variables": {
+    "INCOMPLETE_APPLICATION_QUEUE_URL": "http://localhost:4566/000000000000/team-portal-queue.fifo",
+    "INCOMPLETE_APPLICATION_QUEUE_ENDPOINT": "http://host.docker.internal:4566"
+  }
+}
