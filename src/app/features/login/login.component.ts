@@ -31,6 +31,8 @@ export class LoginComponent {
     this.apiService.login(this.username, this.password).subscribe({
       next: (response) => {
         if (response.success) {
+          // Preload data before navigation for better UX
+          this.apiService.preloadData();
           this.router.navigate(['/home']);
         }
       },

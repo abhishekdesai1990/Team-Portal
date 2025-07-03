@@ -1,7 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Job } from '../../services/api.service';
+import { Subscription } from 'rxjs';
+import { finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-jobs',
@@ -10,13 +12,14 @@ import { ApiService, Job } from '../../services/api.service';
   templateUrl: './jobs.component.html',
   styleUrl: './jobs.component.css'
 })
-export class JobsComponent implements OnInit {
+export class JobsComponent implements OnInit, OnDestroy {
   jobs: Job[] = [];
   filteredJobs: Job[] = [];
-  isLoading = true;
+  isLoading = false; // Start as false, only show loading when actually loading
   error: string | null = null;
   isSubmitting = false;
   showAddJobForm = false;
+  private subscriptions: Subscription[] = [];
 
   // Filter properties
   searchTerm = '';
@@ -42,26 +45,41 @@ export class JobsComponent implements OnInit {
   constructor(private apiService: ApiService) {}
 
   ngOnInit() {
-    this.loadJobs();
+    // Check if we already have cached data
+    const cachedJobs = this.apiService.getCachedJobs();
+    if (cachedJobs) {
+      this.jobs = cachedJobs;
+      this.filteredJobs = cachedJobs;
+      this.populateFilterOptions();
+      this.isLoading = false;
+    } else {
+      this.loadJobs();
+    }
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
   loadJobs() {
     this.isLoading = true;
     this.error = null;
 
-    this.apiService.getJobs().subscribe({
+    const subscription = this.apiService.getJobs().pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
       next: (jobs) => {
         this.jobs = jobs;
         this.filteredJobs = jobs;
         this.populateFilterOptions();
-        this.isLoading = false;
       },
       error: (error) => {
         this.error = 'Failed to load jobs data';
-        this.isLoading = false;
         console.error('Jobs error:', error);
       }
     });
+    
+    this.subscriptions.push(subscription);
   }
 
   populateFilterOptions() {
@@ -79,17 +97,19 @@ export class JobsComponent implements OnInit {
     };
 
     this.isLoading = true;
-    this.apiService.getJobs(filters).subscribe({
+    const subscription = this.apiService.getJobs(filters).pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
       next: (jobs) => {
         this.filteredJobs = jobs;
-        this.isLoading = false;
       },
       error: (error) => {
         this.error = 'Failed to filter jobs';
-        this.isLoading = false;
         console.error('Filter error:', error);
       }
     });
+    
+    this.subscriptions.push(subscription);
   }
 
   clearFilters() {
@@ -101,7 +121,22 @@ export class JobsComponent implements OnInit {
   }
 
   refreshJobs() {
-    this.loadJobs();
+    const subscription = this.apiService.refreshJobs().pipe(
+      finalize(() => this.isLoading = false)
+    ).subscribe({
+      next: (jobs) => {
+        this.jobs = jobs;
+        this.filteredJobs = jobs;
+        this.populateFilterOptions();
+        this.error = null;
+      },
+      error: (error) => {
+        this.error = 'Failed to refresh jobs data';
+        console.error('Jobs refresh error:', error);
+      }
+    });
+    
+    this.subscriptions.push(subscription);
   }
 
   toggleAddJobForm() {

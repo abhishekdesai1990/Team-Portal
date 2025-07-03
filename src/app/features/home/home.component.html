@@ -6,8 +6,9 @@
     </button>
   </div>
 
-  <div *ngIf="isLoading" class="loading">
-    <p>Loading dashboard data...</p>
+  <div *ngIf="isLoading && !stats" class="loading">
+    <div class="loading-spinner"></div>
+    <p>Loading dashboard...</p>
   </div>
 
   <div *ngIf="error" class="error">
@@ -15,7 +16,11 @@
     <button (click)="refreshStats()" class="retry-btn">Try Again</button>
   </div>
 
-  <div *ngIf="stats && !isLoading" class="dashboard-grid">
+  <div *ngIf="stats" class="dashboard-grid" [class.loading-overlay]="isLoading">
+    <div *ngIf="isLoading" class="loading-overlay-content">
+      <div class="loading-spinner"></div>
+      <span>Refreshing...</span>
+    </div>
     <div class="dashboard-card welcome-card">
       <h3>Welcome to TeamPortal</h3>
       <p>Your central hub for team management and collaboration.</p>

@@ -11,12 +11,22 @@
     </div>
   </div>
 
+  <div *ngIf="isLoading && filteredJobs.length === 0" class="loading">
+    <div class="loading-spinner"></div>
+    <p>Loading jobs...</p>
+  </div>
+
   <div *ngIf="error" class="error-message">
     <p>{{ error }}</p>
     <button (click)="refreshJobs()" class="retry-btn">Try Again</button>
   </div>
 
-  <!-- Add Job Form -->
+  <!-- Filters Section -->
+  <div *ngIf="!isLoading || filteredJobs.length > 0" class="filters-container" [class.loading-overlay]="isLoading && filteredJobs.length > 0">
+    <div *ngIf="isLoading && filteredJobs.length > 0" class="loading-overlay-content">
+      <div class="loading-spinner"></div>
+      <span>Updating...</span>
+    </div>
   <div *ngIf="showAddJobForm && isAdmin()" class="add-job-form">
     <h2>Create New Job Listing</h2>
     <form (ngSubmit)="submitJob()" class="job-form">
@@ -105,7 +115,13 @@
     </form>
   </div>
   
-  <div class="filters">
+  <!-- Job Filters -->
+  <div *ngIf="!isLoading || filteredJobs.length > 0" class="filters" [class.loading-overlay]="isLoading && filteredJobs.length > 0">
+    <div *ngIf="isLoading && filteredJobs.length > 0" class="loading-overlay-content">
+      <div class="loading-spinner"></div>
+      <span>Updating...</span>
+    </div>
+    
     <input 
       type="text" 
       placeholder="Search jobs..." 
@@ -133,11 +149,8 @@
     <button (click)="clearFilters()" class="clear-btn" [disabled]="isLoading">Clear Filters</button>
   </div>
 
-  <div *ngIf="isLoading" class="loading">
-    <p>Loading jobs...</p>
-  </div>
-
-  <div *ngIf="!isLoading" class="jobs-grid">
+  <!-- Jobs Grid -->
+  <div *ngIf="!isLoading || filteredJobs.length > 0" class="jobs-grid"
     <div *ngFor="let job of filteredJobs" class="job-card">
       <div class="job-header">
         <h3>{{ job.title }}</h3>

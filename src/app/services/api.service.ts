@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, BehaviorSubject } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Observable, BehaviorSubject, of, shareReplay, timer } from 'rxjs';
+import { tap, switchMap, catchError } from 'rxjs/operators';
 
 export interface User {
   id?: number;
@@ -53,6 +53,17 @@ export class ApiService {
   private baseUrl = 'http://localhost:3000/api';
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
+  
+  // Cache for API responses
+  private dashboardStatsCache$?: Observable<DashboardStats>;
+  private jobsCache$?: Observable<Job[]>;
+  private usersCache$?: Observable<User[]>;
+  private suggestionsCache$?: Observable<Suggestion[]>;
+  private cacheTimeout = 30000; // 30 seconds
+  
+  // In-memory cache for immediate access
+  private cachedDashboardStats?: DashboardStats;
+  private cachedJobs?: Job[];
 
   constructor(private http: HttpClient) {
     // Check if user is already logged in (from localStorage)
@@ -108,6 +119,11 @@ export class ApiService {
 
   // Jobs
   getJobs(filters?: { search?: string; department?: string; location?: string; type?: string }): Observable<Job[]> {
+    // If no filters are provided and cache exists, return cache
+    if (!filters && this.jobsCache$) {
+      return this.jobsCache$;
+    }
+    
     let url = `${this.baseUrl}/jobs`;
     if (filters) {
       const params = new URLSearchParams();
@@ -120,7 +136,27 @@ export class ApiService {
         url += `?${params.toString()}`;
       }
     }
-    return this.http.get<Job[]>(url);
+    
+    const request$ = this.http.get<Job[]>(url).pipe(
+      tap(jobs => this.cachedJobs = jobs), // Store in memory cache
+      shareReplay(1),
+      catchError(error => {
+        console.error('Jobs API error:', error);
+        throw error;
+      })
+    );
+    
+    // Cache only unfiltered requests
+    if (!filters) {
+      this.jobsCache$ = request$;
+      // Clear cache after timeout
+      timer(this.cacheTimeout).subscribe(() => {
+        this.jobsCache$ = undefined;
+        this.cachedJobs = undefined;
+      });
+    }
+    
+    return request$;
   }
 
   createJob(job: Partial<Job>): Observable<Job> {
@@ -150,11 +186,65 @@ export class ApiService {
 
   // Dashboard
   getDashboardStats(): Observable<DashboardStats> {
-    return this.http.get<DashboardStats>(`${this.baseUrl}/dashboard/stats`);
+    if (this.dashboardStatsCache$) {
+      return this.dashboardStatsCache$;
+    }
+    
+    this.dashboardStatsCache$ = this.http.get<DashboardStats>(`${this.baseUrl}/dashboard/stats`).pipe(
+      tap(stats => this.cachedDashboardStats = stats), // Store in memory cache
+      shareReplay(1),
+      catchError(error => {
+        console.error('Dashboard stats API error:', error);
+        throw error;
+      })
+    );
+    
+    // Clear cache after timeout
+    timer(this.cacheTimeout).subscribe(() => {
+      this.dashboardStatsCache$ = undefined;
+      this.cachedDashboardStats = undefined;
+    });
+    
+    return this.dashboardStatsCache$;
+  }
+
+  getCachedDashboardStats(): DashboardStats | null {
+    return this.cachedDashboardStats || null;
+  }
+
+  getCachedJobs(): Job[] | null {
+    return this.cachedJobs || null;
   }
 
   // Health check
   healthCheck(): Observable<any> {
     return this.http.get(`${this.baseUrl}/health`);
+  }
+
+  // Cache management
+  clearCache(): void {
+    this.dashboardStatsCache$ = undefined;
+    this.jobsCache$ = undefined;
+    this.usersCache$ = undefined;
+    this.suggestionsCache$ = undefined;
+    this.cachedDashboardStats = undefined;
+    this.cachedJobs = undefined;
+  }
+
+  // Preload data for better UX
+  preloadData(): void {
+    // Preload dashboard stats and jobs data
+    this.getDashboardStats().subscribe();
+    this.getJobs().subscribe();
+  }
+
+  refreshDashboard(): Observable<DashboardStats> {
+    this.dashboardStatsCache$ = undefined;
+    return this.getDashboardStats();
+  }
+
+  refreshJobs(): Observable<Job[]> {
+    this.jobsCache$ = undefined;
+    return this.getJobs();
   }
 }
