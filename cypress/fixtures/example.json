@@ -1,0 +1,49 @@
+{
+  "demoCredentials": [
+    {
+      "username": "admin",
+      "password": "admin123",
+      "role": "admin"
+    },
+    {
+      "username": "user",
+      "password": "user123",
+      "role": "user"
+    },
+    {
+      "username": "manager",
+      "password": "manager123", 
+      "role": "manager"
+    }
+  ],
+  "jobs": [
+    {
+      "id": 1,
+      "title": "Software Engineer",
+      "company": "Tech Corp",
+      "location": "London",
+      "description": "Join our team as a software engineer"
+    },
+    {
+      "id": 2,
+      "title": "Product Manager",
+      "company": "Innovation Ltd",
+      "location": "Manchester",
+      "description": "Lead product development"
+    }
+  ],
+  "suggestions": [
+    {
+      "id": 1,
+      "title": "Improve UI",
+      "description": "Make the interface more user-friendly",
+      "status": "pending"
+    },
+    {
+      "id": 2,
+      "title": "Add Dark Mode",
+      "description": "Implement dark theme option",
+      "status": "approved"
+    }
+  ]
+}

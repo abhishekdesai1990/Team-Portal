@@ -6,7 +6,15 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "serve:ssr:TeamPortal": "node dist/TeamPortal/server/server.mjs"
+    "serve:ssr:TeamPortal": "node dist/TeamPortal/server/server.mjs",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:video": "cypress run --config video=true",
+    "cypress:run:no-video": "cypress run --config video=false",
+    "e2e": "cypress run",
+    "e2e:open": "cypress open",
+    "e2e:video": "cypress run --config video=true,videoCompression=32",
+    "e2e:record": "cypress run --record --config video=true"
   },
   "prettier": {
     "overrides": [
@@ -38,6 +46,7 @@
     "@angular/compiler-cli": "^20.0.0",
     "@types/express": "^5.0.1",
     "@types/node": "^20.17.19",
+    "cypress": "^13.17.0",
     "typescript": "~5.8.2"
   }
 }
